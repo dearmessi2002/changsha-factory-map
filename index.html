@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长沙实地调研厂家地图 · 卫星影像</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --c-high:#2e9e5b; --c-medium:#2f7de1; --c-low:#e08a00; --c-none:#9aa3ad; --c-red:#e5484d; --c-gold:#d99a1b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;background:#dfe6ee}
+  #app{display:flex;height:100vh;width:100vw;overflow:hidden}
+
+  /* ---------- 侧边栏 ---------- */
+  #sidebar{width:350px;min-width:350px;background:#fff;display:flex;flex-direction:column;box-shadow:2px 0 12px rgba(0,0,0,.18);z-index:1000;transition:margin-left .25s ease}
+  #sidebar.collapsed{margin-left:-350px}
+  .side-head{padding:16px 16px 12px;background:linear-gradient(135deg,#16324f 0%,#1f4e79 100%);color:#fff}
+  .side-head h1{font-size:18px;font-weight:700;letter-spacing:.5px}
+  .side-head .sub{font-size:12px;color:#cfe0f2;margin-top:6px;line-height:1.5}
+  .side-head .sub b{color:#ffd97a}
+  #searchBox{width:100%;margin-top:12px;padding:9px 12px;border:none;border-radius:8px;font-size:13px;outline:none;background:rgba(255,255,255,.95);color:#223}
+  #searchBox::placeholder{color:#8aa}
+  .legend{padding:10px 16px;border-bottom:1px solid #e8edf2;display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:#445}
+  .legend .it{display:flex;align-items:center;gap:5px}
+  .legend .dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+  .list-wrap{flex:1;overflow-y:auto}
+  .list-info{padding:8px 16px;font-size:12px;color:#778}
+  ul#list{list-style:none}
+  #list li{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid #f0f3f6;cursor:pointer;transition:background .15s}
+  #list li:hover{background:#f2f7fc}
+  #list li.active{background:#e8f2fd}
+  #list .num{flex:none;width:24px;height:24px;border-radius:50%;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  #list .info{flex:1;min-width:0}
+  #list .nm{font-size:13.5px;font-weight:600;color:#223;line-height:1.35;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+  #list .ad{font-size:12px;color:#889;margin-top:3px;line-height:1.4}
+  .chip{font-size:10.5px;font-weight:400;padding:1.5px 7px;border-radius:9px;color:#fff;flex:none}
+  .chip.high{background:var(--c-high)} .chip.medium{background:var(--c-medium)} .chip.low{background:var(--c-low)} .chip.none{background:var(--c-none)}
+  .dupchip{font-size:10.5px;padding:1.5px 7px;border-radius:9px;background:#fde7e8;color:var(--c-red);flex:none}
+  .side-foot{padding:10px 16px;border-top:1px solid #e8edf2;font-size:11px;color:#889;line-height:1.6;background:#fafbfc}
+
+  /* ---------- 地图 ---------- */
+  #map{flex:1;height:100%}
+  .map-tools{position:absolute;right:14px;top:14px;z-index:900;display:flex;flex-direction:column;gap:8px}
+  .map-tools button,.side-toggle{background:#fff;border:none;border-radius:8px;padding:9px 12px;font-size:13px;color:#245;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:6px}
+  .map-tools button:hover,.side-toggle:hover{background:#f0f6fc}
+  .side-toggle{position:absolute;left:14px;top:14px;z-index:1100;font-weight:700}
+
+  /* ---------- 图标 ---------- */
+  .pin-wrap{position:relative}
+  .pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+  .pin span{transform:rotate(45deg);color:#fff;font-size:11px;font-weight:700}
+  .pin.high{background:var(--c-high)} .pin.medium{background:var(--c-medium)} .pin.low{background:var(--c-low)} .pin.none{background:var(--c-none)}
+  .pin-wrap .dup{position:absolute;top:-5px;right:-7px;min-width:17px;height:17px;padding:0 3px;border-radius:9px;background:var(--c-red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .pin-center{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c-gold);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+  .pin-center span{transform:rotate(45deg);color:#fff;font-size:15px;font-weight:800}
+
+  /* ---------- 弹窗 ---------- */
+  .leaflet-popup-content{font-family:inherit;line-height:1.55}
+  .pop-name{font-size:14.5px;font-weight:700;color:#16324f;margin-bottom:6px}
+  .pop-row{font-size:12.5px;color:#445;margin:2px 0}
+  .pop-row b{color:#223}
+  .pop-links{margin-top:8px;display:flex;gap:8px}
+  .pop-links a{flex:1;text-align:center;text-decoration:none;font-size:12px;padding:6px 8px;border-radius:6px;background:#1f6fb2;color:#fff}
+  .pop-links a:hover{background:#185a92}
+  .leaflet-container{font-family:inherit}
+  .leaflet-control-attribution{font-size:10px}
+
+  #toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:rgba(22,50,79,.92);color:#fff;font-size:13px;padding:9px 18px;border-radius:20px;z-index:2000;opacity:0;pointer-events:none;transition:opacity .25s}
+  #toast.show{opacity:1}
+
+  @media (max-width:760px){
+    #sidebar{position:absolute;left:0;top:0;bottom:0;height:100%;z-index:1050}
+    #sidebar.collapsed{margin-left:-350px}
+    .side-toggle{left:6px;top:8px;padding:8px 10px;z-index:1150}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="side-head">
+      <h1>🗺️ 长沙实地调研厂家地图</h1>
+      <div class="sub">地图中心：<b>湘江科技创新院</b><br>湘江创智园 · 长沙市岳麓区麓景路751号</div>
+      <input id="searchBox" type="text" placeholder="🔍 搜索厂家名称 / 地址…">
+    </div>
+    <div class="legend">
+      <span class="it"><span class="dot" style="background:var(--c-high)"></span>精确位置</span>
+      <span class="it"><span class="dot" style="background:var(--c-medium)"></span>道路/片区近似</span>
+      <span class="it"><span class="dot" style="background:var(--c-low)"></span>街道级近似</span>
+      <span class="it"><span class="dot" style="background:var(--c-none)"></span>暂未定位</span>
+      <span class="it"><span class="dot" style="background:var(--c-gold)"></span>湘江科技创新院</span>
+    </div>
+    <div class="list-wrap">
+      <div class="list-info" id="listInfo"></div>
+      <ul id="list"></ul>
+    </div>
+    <div class="side-foot">
+      坐标经 OSM/Photon 地理编码获得（WGS-84），页面内自动转换为 GCJ-02 以对齐高德卫星底图；部分小厂无公开精确门牌，已按置信度标注，点击标记可打开高德导航核对。卫星影像 © 高德地图。
+    </div>
+  </aside>
+
+  <div id="map"></div>
+
+  <div class="map-tools">
+    <button id="btnAll">⛶ 显示全部厂家</button>
+    <button id="btnCenter">★ 回到湘江科技创新院</button>
+  </div>
+  <button class="side-toggle" id="toggleSidebar">☰ 厂家列表</button>
+</div>
+
+<div id="toast"></div>
+
+<script src="data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  if (!window.L) { document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>'); }
+</script>
+<script>
+(function(){
+  "use strict";
+  if (!window.L) { document.getElementById("toast").textContent = "地图库加载失败，请检查网络后刷新"; document.getElementById("toast").classList.add("show"); return; }
+
+  /* ---------- WGS-84 → GCJ-02 ---------- */
+  var a = 6378245.0, ee = 0.00669342162296594323;
+  function outOfChina(lng, lat){ return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271; }
+  function tLat(x, y){
+    var r = -100.0 + 2.0*x + 3.0*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+    r += (20.0*Math.sin(6.0*x*Math.PI) + 20.0*Math.sin(2.0*x*Math.PI)) * 2.0/3.0;
+    r += (20.0*Math.sin(y*Math.PI) + 40.0*Math.sin(y/3.0*Math.PI)) * 2.0/3.0;
+    r += (160.0*Math.sin(y/12.0*Math.PI) + 320.0*Math.sin(y*Math.PI/30.0)) * 2.0/3.0;
+    return r;
+  }
+  function tLng(x, y){
+    var r = 300.0 + x + 2.0*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+    r += (20.0*Math.sin(6.0*x*Math.PI) + 20.0*Math.sin(2.0*x*Math.PI)) * 2.0/3.0;
+    r += (20.0*Math.sin(x*Math.PI) + 40.0*Math.sin(x/3.0*Math.PI)) * 2.0/3.0;
+    r += (150.0*Math.sin(x/12.0*Math.PI) + 300.0*Math.sin(x/30.0*Math.PI)) * 2.0/3.0;
+    return r;
+  }
+  function wgs84ToGcj02(lng, lat){
+    if (outOfChina(lng, lat)) return [lng, lat];
+    var dLat = tLat(lng - 105.0, lat - 35.0);
+    var dLng = tLng(lng - 105.0, lat - 35.0);
+    var radLat = lat / 180.0 * Math.PI, magic = Math.sin(radLat);
+    magic = 1 - ee * magic * magic;
+    var sqrtMagic = Math.sqrt(magic);
+    dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * Math.PI);
+    dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * Math.PI);
+    return [lng + dLng, lat + dLat];
+  }
+
+  /* ---------- 地图与底图 ---------- */
+  var c = wgs84ToGcj02(CENTER.lng, CENTER.lat);
+  var map = L.map("map", { zoomControl: true }).setView([c[1], c[0]], 12);
+
+  var sub = ["1","2","3","4"];
+  var layerSat  = L.tileLayer("https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}", { subdomains: sub, maxZoom: 18, attribution: "卫星影像 © 高德地图" });
+  var layerRoad = L.tileLayer("https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}", { subdomains: sub, maxZoom: 18, attribution: "" });
+  var layerNorm = L.tileLayer("https://webst0{s}.is.autonavi.com/appmaptile?style=7&x={x}&y={y}&z={z}", { subdomains: sub, maxZoom: 18, attribution: "© 高德地图" });
+  layerSat.addTo(map); layerRoad.addTo(map);
+  L.control.layers({ "卫星影像": layerSat, "标准地图": layerNorm }, { "道路/地名注记": layerRoad }, { position: "topright" }).addTo(map);
+  L.control.scale({ imperial: false }).addTo(map);
+
+  /* ---------- 中心点：湘江科技创新院 ---------- */
+  var centerIcon = L.divIcon({ className: "", html: '<div class="pin-center"><span>院</span></div>', iconSize: [34, 34], iconAnchor: [17, 33], popupAnchor: [0, -30] });
+  L.marker([c[1], c[0]], { icon: centerIcon })
+    .bindPopup('<div class="pop-name">湘江科技创新院（湘江创智园）</div>' +
+      '<div class="pop-row"><b>地址：</b>长沙市岳麓区麓景路751号</div>' +
+      '<div class="pop-row"><b>说明：</b>北接科园一路，南至桃花溪公园，东临科创路，西靠麓景路（桃花岭下）</div>' +
+      '<div class="pop-links"><a target="_blank" href="https://uri.amap.com/navigation?to=' + c[0] + ',' + c[1] + ',' + encodeURIComponent('湘江科技创新院') + '&mode=car&coordinate=gaode">高德导航</a></div>')
+    .addTo(map).openPopup();
+
+  /* ---------- 厂家标记 ---------- */
+  var confLabel = { high: "精确", medium: "近似", low: "街道级", none: "未定位" };
+  var markers = [], listItems = {}, located = 0;
+
+  FACTORY_DATA.forEach(function(f){
+    var li = document.createElement("li");
+    li.dataset.id = f.id;
+    li.innerHTML =
+      '<span class="num" style="background:var(--c-' + f.confidence + ')">' + f.id + '</span>' +
+      '<div class="info">' +
+        '<div class="nm">' + f.name +
+          (f.dup > 1 ? '<span class="dupchip">名单×' + f.dup + '</span>' : '') +
+          '<span class="chip ' + f.confidence + '">' + confLabel[f.confidence] + '</span>' +
+        '</div>' +
+        '<div class="ad">' + (f.address || "暂未定位到坐标，待补充") + '</div>' +
+      '</div>';
+    li.addEventListener("click", function(){
+      if (f.lng == null) { toast("「" + f.name + "」暂未定位到坐标"); return; }
+      map.flyTo([wgs84ToGcj02(f.lng, f.lat)[1], wgs84ToGcj02(f.lng, f.lat)[0]], 15, { duration: .8 });
+      if (markers[f.id]) setTimeout(function(){ markers[f.id].openPopup(); }, 850);
+      setActive(f.id);
+    });
+    document.getElementById("list").appendChild(li);
+    listItems[f.id] = li;
+
+    if (f.lng != null && f.lat != null) {
+      located++;
+      var gcj = wgs84ToGcj02(f.lng, f.lat);
+      var icon = L.divIcon({ className: "", html:
+        '<div class="pin-wrap"><div class="pin ' + f.confidence + '"><span>' + f.id + '</span></div>' +
+        (f.dup > 1 ? '<div class="dup">×' + f.dup + '</div>' : '') + '</div>',
+        iconSize: [30, 36], iconAnchor: [15, 34], popupAnchor: [0, -32] });
+      var m = L.marker([gcj[1], gcj[0]], { icon: icon });
+      var html = '<div class="pop-name">' + f.id + '. ' + f.name + '</div>' +
+        (f.dup > 1 ? '<div class="pop-row"><b>备注：</b>该名称在调研名单中出现 ' + f.dup + ' 次，已合并标注</div>' : '') +
+        '<div class="pop-row"><b>地址：</b>' + (f.address || "—") + '</div>' +
+        '<div class="pop-row"><b>定位精度：</b>' + confLabel[f.confidence] + (f.note ? "（" + f.note + "）" : "") + '</div>' +
+        (f.source ? '<div class="pop-row"><b>来源：</b>' + f.source + '</div>' : '') +
+        '<div class="pop-links">' +
+          '<a target="_blank" href="https://uri.amap.com/navigation?to=' + gcj[0] + ',' + gcj[1] + ',' + encodeURIComponent(f.name) + '&mode=car&coordinate=gaode">高德导航</a>' +
+          '<a target="_blank" href="https://uri.amap.com/marker?position=' + gcj[0] + ',' + gcj[1] + '&name=' + encodeURIComponent(f.name) + '">查看位置</a>' +
+        '</div>';
+      m.bindPopup(html);
+      m.addTo(map);
+      markers[f.id] = m;
+    }
+  });
+
+  document.getElementById("listInfo").textContent =
+    "共 " + FACTORY_DATA.length + " 家（调研名单 23 条，2 家重复）· 已定位 " + located + " 家";
+
+  function setActive(id){
+    Object.keys(listItems).forEach(function(k){ listItems[k].classList.toggle("active", +k === id); });
+  }
+
+  /* ---------- 搜索 ---------- */
+  var searchBox = document.getElementById("searchBox");
+  searchBox.addEventListener("input", function(){
+    var q = this.value.trim().toLowerCase();
+    FACTORY_DATA.forEach(function(f){
+      var hit = !q || f.name.toLowerCase().indexOf(q) >= 0 || (f.address || "").toLowerCase().indexOf(q) >= 0;
+      listItems[f.id].style.display = hit ? "" : "none";
+    });
+  });
+
+  /* ---------- 工具按钮 ---------- */
+  document.getElementById("btnAll").addEventListener("click", function(){
+    var pts = [[c[1], c[0]]];
+    FACTORY_DATA.forEach(function(f){
+      if (f.lng != null) { var g = wgs84ToGcj02(f.lng, f.lat); pts.push([g[1], g[0]]); }
+    });
+    map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 13 });
+  });
+  document.getElementById("btnCenter").addEventListener("click", function(){
+    map.flyTo([c[1], c[0]], 12, { duration: 1 });
+  });
+  document.getElementById("toggleSidebar").addEventListener("click", function(){
+    document.getElementById("sidebar").classList.toggle("collapsed");
+  });
+
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._tm); t._tm = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+  }
+})();
+</script>
+</body>
+</html>

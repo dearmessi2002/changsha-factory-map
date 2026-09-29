@@ -1,0 +1,10 @@
+# 本地临时/大文件，不上传到公开仓库
+preview.png
+启动地图.bat
+使用说明.md
+.edge-*/
+err*.txt
+out.txt
+dom*.html
+test-*.txt
+*.tmp
