@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   :root{
-    --c-high:#2e9e5b; --c-medium:#2f7de1; --c-low:#e08a00; --c-none:#9aa3ad; --c-red:#e5484d; --c-gold:#d99a1b;
+    --c-high:#2e9e5b; --c-medium:#2f7de1; --c-low:#e08a00; --c-none:#9aa3ad; --c-red:#e5484d; --c-center:#d92f2f;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;background:#dfe6ee}
@@ -54,7 +54,7 @@
   .pin span{transform:rotate(45deg);color:#fff;font-size:11px;font-weight:700}
   .pin.high{background:var(--c-high)} .pin.medium{background:var(--c-medium)} .pin.low{background:var(--c-low)} .pin.none{background:var(--c-none)}
   .pin-wrap .dup{position:absolute;top:-5px;right:-7px;min-width:17px;height:17px;padding:0 3px;border-radius:9px;background:var(--c-red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
-  .pin-center{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c-gold);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+  .pin-center{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c-center);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
   .pin-center span{transform:rotate(45deg);color:#fff;font-size:15px;font-weight:800}
 
   /* ---------- 弹窗 ---------- */
@@ -91,7 +91,7 @@
       <span class="it"><span class="dot" style="background:var(--c-medium)"></span>道路/片区近似</span>
       <span class="it"><span class="dot" style="background:var(--c-low)"></span>街道级近似</span>
       <span class="it"><span class="dot" style="background:var(--c-none)"></span>暂未定位</span>
-      <span class="it"><span class="dot" style="background:var(--c-gold)"></span>湘江科技创新院</span>
+      <span class="it"><span class="dot" style="background:var(--c-center)"></span>湘江科技创新院</span>
     </div>
     <div class="list-wrap">
       <div class="list-info" id="listInfo"></div>
